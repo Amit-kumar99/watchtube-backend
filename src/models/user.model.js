@@ -1,6 +1,6 @@
-import mongoose, { Schema } from "mongoose";
+const mongoose = require("mongoose");
 
-const userSchema = new Schema(
+const userSchema = new mongoose.Schema(
   {
     username: {
       type: String,
@@ -26,13 +26,14 @@ const userSchema = new Schema(
     avatar: {
       type: String, // cloudinary url
       required: true,
+      // default: "", // cloudinary url
     },
     coverImage: {
       type: String, // cloudinary url
     },
     watchHistory: [
       {
-        type: Schema.Types.ObjectId,
+        type: mongoose.Schema.Types.ObjectId,
         ref: "Video",
       },
     ],
