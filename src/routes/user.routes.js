@@ -1,5 +1,17 @@
 const { Router } = require("express");
-const { registerUser, loginUser, logoutUser, refreshAccessToken } = require("../controllers/user.controller");
+const {
+  registerUser,
+  loginUser,
+  logoutUser,
+  refreshAccessToken,
+  changeCurrentPassword,
+  getCurrentUser,
+  updateAccountDetails,
+  updateUserAvatar,
+  updateUserCoverImage,
+  getUserChannelProfile,
+  getWatchHistory,
+} = require("../controllers/user.controller");
 const { upload } = require("../middlewares/multer.middleware");
 const { authenticateJwt } = require("../middlewares/auth.middleware");
 
@@ -25,5 +37,29 @@ router.post("/login", loginUser);
 router.post("/logout", authenticateJwt, logoutUser);
 
 router.post("/refresh-token", refreshAccessToken);
+
+router.post("/change-password", authenticateJwt, changeCurrentPassword);
+
+router.get("/current-user", authenticateJwt, getCurrentUser);
+
+router.patch("/update-account", authenticateJwt, updateAccountDetails);
+
+router.patch(
+  "/update-avatar",
+  authenticateJwt,
+  upload.single("avatar"),
+  updateUserAvatar
+);
+
+router.patch(
+  "/update-coverImage",
+  authenticateJwt,
+  upload.single("coverImage"),
+  updateUserCoverImage
+);
+
+router.get("/channel/:username", authenticateJwt, getUserChannelProfile);
+
+router.get("/watchHistory", authenticateJwt, getWatchHistory);
 
 module.exports = router;
