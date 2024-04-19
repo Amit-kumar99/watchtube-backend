@@ -1,5 +1,5 @@
 const { asyncHandler } = require("../utils/asyncHandler");
-const User = require("../models/user.model");
+const { User } = require("../models/user.model");
 const { hashPassword, verifyPassword } = require("../helpers/bcryptHelper");
 const { uploadOnCloudinary } = require("../utils/cloudinary");
 const { ApiResponse } = require("../utils/ApiResponse");
@@ -39,7 +39,7 @@ const registerUser = asyncHandler(async (req, res) => {
   const user = await User.create({
     ...req.body,
     username: username.toLowerCase(),
-    avatar: avatar.url,
+    avatar: avatar?.url,
     coverImage: coverImage?.url || "",
     password: hashedPassword,
   });
@@ -233,7 +233,7 @@ const updateUserCoverImage = asyncHandler(async () => {
   return res.json(200, user, "Avatar updated successfully");
 });
 
-const getUserChannelProfile = asyncHandler(async (req, res) => {
+const getUserChannelProfile = asyncHandler(async (req, _) => {
   const { username } = req.params;
   if (!username?.trim()) {
     throw new ApiError(401, "No username provided");

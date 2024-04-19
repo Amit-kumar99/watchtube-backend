@@ -1,6 +1,7 @@
 require("dotenv").config();
 const { v2: cloudinary } = require("cloudinary");
 const fs = require("fs");
+const { ApiError } = require("./ApiError");
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -19,7 +20,7 @@ const uploadOnCloudinary = async (localFilePath) => {
     return response;
   } catch (error) {
     fs.unlinkSync(localFilePath);
-    console.log("cloudinary upload error");
+    throw new ApiError(501, "cloudinary upload error");
   }
 };
 
