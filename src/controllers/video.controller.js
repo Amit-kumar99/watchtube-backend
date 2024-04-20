@@ -118,6 +118,8 @@ const getVideoById = asyncHandler(async (req, res) => {
   }
   try {
     const video = await Video.findById(videoId);
+    video.views = video.views + 1;
+    await video.save();
     res.json(new ApiResponse(200, video, "Video fetched"));
   } catch (error) {
     throw new ApiError(401, error.message);
