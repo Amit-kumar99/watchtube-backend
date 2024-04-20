@@ -12,7 +12,7 @@ const { upload } = require("../middlewares/multer.middleware");
 
 const router = Router();
 
-router.get("/:userId", authenticateJwt, getAllVideos);
+router.get("/profile/:userId", authenticateJwt, getAllVideos);
 router.post(
   "/upload",
   authenticateJwt,
@@ -29,8 +29,13 @@ router.post(
   uploadVideo
 );
 router.get("/:videoId", authenticateJwt, getVideoById);
-router.post("/update", authenticateJwt, updateVideo);
-router.delete("/delete", authenticateJwt, deleteVideo);
-router.post("/togglePublishStatus", authenticateJwt, togglePublishStatus);
+router.patch(
+  "/update/:videoId",
+  authenticateJwt,
+  upload.single("thumbnail"),
+  updateVideo
+);
+router.delete("/delete/:videoId", authenticateJwt, deleteVideo);
+router.post("/togglePublishStatus/:videoId", authenticateJwt, togglePublishStatus);
 
 module.exports = router;

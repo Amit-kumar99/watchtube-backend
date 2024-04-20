@@ -1,10 +1,10 @@
 const { ApiError } = require("../utils/ApiError");
 const { ApiResponse } = require("../utils/ApiResponse");
 const { uploadOnCloudinary } = require("../utils/cloudinary");
-// const aggregatePaginate = require("mongoose-aggregate-paginate-v2");
 const { asyncHandler } = require("../utils/asyncHandler");
 const { Video } = require("../models/video.model");
-//TODO: testing left in postman:
+const { mongoose } = require("mongoose");
+
 const getAllVideos = asyncHandler(async (req, res) => {
   const page = req.query?.page || 1;
   const limit = req.query?.limit || 10;
@@ -15,18 +15,10 @@ const getAllVideos = asyncHandler(async (req, res) => {
   };
 
   try {
-    const aggregatedVideos = await Video.aggregate([
+    const aggregatedVideos = Video.aggregate([
       {
         $match: {
-          owner: userId,
-        },
-      },
-      {
-        $lookup: {
-          from: "users",
-          localField: "owner",
-          foreignField: "_id",
-          as: "owners",
+          owner: new mongoose.Types.ObjectId(userId),
         },
       },
       {
@@ -47,15 +39,15 @@ const getAllVideos = asyncHandler(async (req, res) => {
       {
         $project: {
           _id: 1,
-          username: 1,
-          avatar: 1,
-          videoFile: 1,
           thumbnail: 1,
+          title: 1,
+          views: 1,
+          duration: 1,
+          createdAt: 1,
           likesCount: 1,
         },
       },
     ]);
-
     const paginatedVideos = await Video.aggregatePaginate(
       aggregatedVideos,
       options
@@ -163,13 +155,17 @@ const deleteVideo = asyncHandler(async (req, res) => {
   if (!videoId) {
     throw new ApiError(401, "videoId is required");
   }
+  const video = await Video.findById(videoId);
+  if (!video) {
+    throw new ApiError(401, "Invalid videoId");
+  }
   try {
-    const video = await Video.deleteOne({
+    await Video.deleteOne({
       _id: videoId,
     });
-    res.json(new ApiResponse(200, video, "Video deleted successfully"));
+    res.json(new ApiResponse(200, {}, "Video deleted successfully"));
   } catch (error) {
-    throw new ApiError(401, error.message || "Invalid videoId");
+    throw new ApiError(401, error.message);
   }
 });
 
@@ -179,10 +175,14 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
     throw new ApiError(401, "videoId is required");
   }
   const video = await Video.findById(videoId);
+  if (!video) {
+    throw new ApiError(401, "invalid videoId");
+  }
   const isPublished = !video.isPublished;
+  console.log(isPublished);
   try {
-    const video = Video.findByIdAndUpdate(
-      req.user._id,
+    const video = await Video.findByIdAndUpdate(
+      videoId,
       {
         $set: {
           isPublished,
