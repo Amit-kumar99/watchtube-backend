@@ -303,8 +303,8 @@ const getWatchHistory = asyncHandler(async (req, res) => {
   const user = await User.aggregate([
     {
       $match: {
-        _id: new mongoose.Schema.Types.ObjectId(req.user._id)
-      }
+        _id: new mongoose.Schema.Types.ObjectId(req.user._id),
+      },
     },
     {
       $lookup: {
@@ -319,25 +319,28 @@ const getWatchHistory = asyncHandler(async (req, res) => {
               localField: "owner",
               foreignField: "_id",
               as: "videoOwner",
-              pipeline: [ 
+              pipeline: [
                 {
                   $project: {
                     fullName: 1,
                     username: 1,
-                    avatar: 1
-                  }
-                }
-              ]
-            }
-          }
-        ]
-      }
+                    avatar: 1,
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
     },
-
-  ])
+  ]);
 
   return res.json(
-    new ApiResponse(200, user[0].getWatchHistory, "Watch history fetched successfully")
+    new ApiResponse(
+      200,
+      user[0].getWatchHistory,
+      "Watch history fetched successfully"
+    )
   );
 });
 

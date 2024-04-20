@@ -7,8 +7,7 @@ const toggleSubscription = asyncHandler(async (req, res) => {
   const { channelId } = req.params;
   if (!channelId?.trim()) {
     throw new ApiError(401, "ChannelId is required");
-  } /* The `channel` field in the `subscriptionSchema` is defining a reference to another document in
-  the database. */
+  }
 
   const channel = await UserActivation.findOne({ _id: channelId });
   if (!channel) {
@@ -47,7 +46,7 @@ const getAllSubscribedToChannels = asyncHandler(async (req, res) => {
     const subscribedToChannels = await Subscription.aggregate([
       {
         $match: {
-          subscriber: subscriberId,
+          subscriber: new mongoose.Schema.Types.ObjectId(subscriberId),
         },
       },
       {

@@ -3,7 +3,7 @@ const { ApiResponse } = require("../utils/ApiResponse");
 const { uploadOnCloudinary } = require("../utils/cloudinary");
 // const aggregatePaginate = require("mongoose-aggregate-paginate-v2");
 const { asyncHandler } = require("../utils/asyncHandler");
-const { Video } = require("Video");
+const { Video } = require("../models/video.model");
 
 const getAllVideos = asyncHandler(async (req, res) => {
   const page = req.query?.page || 1;
