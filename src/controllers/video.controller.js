@@ -4,7 +4,7 @@ const { uploadOnCloudinary } = require("../utils/cloudinary");
 // const aggregatePaginate = require("mongoose-aggregate-paginate-v2");
 const { asyncHandler } = require("../utils/asyncHandler");
 const { Video } = require("../models/video.model");
-
+//TODO: testing left in postman:
 const getAllVideos = asyncHandler(async (req, res) => {
   const page = req.query?.page || 1;
   const limit = req.query?.limit || 10;
@@ -196,7 +196,7 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
   }
 });
 
-export {
+module.exports = {
   getAllVideos,
   uploadVideo,
   getVideoById,

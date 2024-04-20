@@ -1,7 +1,7 @@
 require("dotenv").config();
 const { asyncHandler } = require("../utils/asyncHandler");
 const jwt = require("jsonwebtoken");
-const User = require("../models/user.model");
+const { User } = require("../models/user.model");
 const { ApiError } = require("../utils/ApiError");
 
 const authenticateJwt = asyncHandler(async (req, _, next) => {

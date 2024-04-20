@@ -1,4 +1,4 @@
-const { asyncHandler } = require("asyncHandler");
+const { asyncHandler } = require("../utils/asyncHandler");
 const { Tweet } = require("../models/tweet.model");
 const { ApiResponse } = require("../utils/ApiResponse");
 const { ApiError } = require("../utils/ApiError");
