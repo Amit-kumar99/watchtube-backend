@@ -2,14 +2,18 @@ const { asyncHandler } = require("../utils/asyncHandler");
 const { Tweet } = require("../models/tweet.model");
 const { ApiResponse } = require("../utils/ApiResponse");
 const { ApiError } = require("../utils/ApiError");
+const { mongoose } = require("mongoose");
 
-const createTweet = asyncHandler(async () => {
-  const { userId } = req.params;
-  if (!userId?.trim()) {
-    throw new ApiError("userId is required");
+const createTweet = asyncHandler(async (req, res) => {
+  const { channelId } = req.params;
+  if (!channelId?.trim()) {
+    throw new ApiError("channelId is required");
   }
-  if (userId !== req.user._id) {
-    throw new ApiError(401, "You are not authorized to create tweet here");
+  if (channelId !== req.user._id.toString()) {
+    throw new ApiError(
+      401,
+      "You are not authorized to create tweet in this channel"
+    );
   }
   const { content } = req.body;
   if (!content?.trim()) {
@@ -26,24 +30,32 @@ const createTweet = asyncHandler(async () => {
   }
 });
 
-const getAllTweets = asyncHandler(async () => {
-  const { userId } = req.params;
-  if (!userId?.trim()) {
-    throw new ApiError("userId is required");
+const getAllTweets = asyncHandler(async (req, res) => {
+  const { channelId } = req.params;
+  if (!channelId?.trim()) {
+    throw new ApiError("channelId is required");
   }
   try {
     const tweets = await Tweet.aggregate([
       {
         $match: {
-          tweetedBy: new mongoose.Schema.Types.ObjectId(userId),
+          tweetedBy: new mongoose.Types.ObjectId(channelId),
         },
       },
       {
         $lookup: {
-          from: "user",
+          from: "users",
           localField: "tweetedBy",
           foreignField: "_id",
           as: "owners",
+          pipeline: [
+            {
+              $project: {
+                username: 1,
+                avatar: 1,
+              },
+            },
+          ],
         },
       },
       {
@@ -65,16 +77,15 @@ const getAllTweets = asyncHandler(async () => {
         $project: {
           _id: 1,
           tweetCreatedAt: "$createdAt",
-          username: 1,
-          avatar: 1,
           likesCount: 1,
+          owners: 1,
         },
       },
     ]);
     res.json(
       new ApiResponse(
         200,
-        tweets[0],
+        tweets,
         "Tweets along with likes fetched successfully"
       )
     );
@@ -84,20 +95,23 @@ const getAllTweets = asyncHandler(async () => {
 });
 
 const updateTweet = asyncHandler(async (req, res) => {
-  const { userId } = req.params;
-  if (!userId?.trim()) {
-    throw new ApiError("userId is required");
+  const { channelId, tweetId } = req.params;
+  if (!channelId?.trim()) {
+    throw new ApiError("channelId is required");
   }
-  if (userId !== req.user._id) {
+  if (channelId !== req.user._id.toString()) {
     throw new ApiError(401, "You are not authorized to create tweet here");
   }
-  const { tweetId } = req.params;
   if (!tweetId?.trim()) {
     throw new ApiError(401, "tweetId is required");
   }
   const { content } = req.body;
   if (!content?.trim()) {
     throw new ApiError(401, "content is required");
+  }
+  const tweet = await Tweet.findById(tweetId);
+  if (!tweet) {
+    throw new ApiError(401, "Invalid tweetId");
   }
   try {
     const tweet = await Tweet.findByIdAndUpdate(
@@ -109,27 +123,33 @@ const updateTweet = asyncHandler(async (req, res) => {
       },
       { new: true }
     );
-    res.send(200, tweet, "tweet updated successfully");
+    res.send(new ApiResponse(200, tweet, "tweet updated successfully"));
   } catch (error) {
     throw new ApiError(401, error.message);
   }
 });
 
 const deleteTweet = asyncHandler(async (req, res) => {
-  const { userId } = req.params;
-  if (!userId?.trim()) {
-    throw new ApiError("userId is required");
+  const { channelId, tweetId } = req.params;
+  if (!channelId?.trim()) {
+    throw new ApiError("channelId is required");
   }
-  if (userId !== req.user._id) {
-    throw new ApiError(401, "You are not authorized to create tweet here");
+  if (channelId !== req.user._id.toString()) {
+    throw new ApiError(
+      401,
+      "You are not authorized to delete tweet in this channel"
+    );
   }
-  const { tweetId } = req.params;
   if (!tweetId?.trim()) {
     throw new ApiError(401, "tweetId is required");
   }
+  const tweet = await Tweet.findById(tweetId);
+  if (!tweet) {
+    throw new ApiError(401, "Invalid tweetId");
+  }
   try {
     await Tweet.deleteOne({ _id: tweetId });
-    res.send(200, {}, "tweet updated successfully");
+    res.json(new ApiResponse(200, {}, "tweet deleted successfully"));
   } catch (error) {
     throw new ApiError(401, error.message);
   }

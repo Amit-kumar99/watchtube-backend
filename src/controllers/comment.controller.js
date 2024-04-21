@@ -2,8 +2,8 @@ const { asyncHandler } = require("../utils/asyncHandler");
 const { Comment } = require("../models/comment.model");
 const { ApiResponse } = require("../utils/ApiResponse");
 const { ApiError } = require("../utils/ApiError");
-// const { aggregatePaginate } = require("mongoose-aggregate-paginate-v2");
 
+//TODO: postman
 const getAllComments = asyncHandler(async (req, res) => {
   const { userId } = req.user._id;
   if (!userId?.trim()) {

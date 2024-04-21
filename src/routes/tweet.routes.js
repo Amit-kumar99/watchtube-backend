@@ -9,9 +9,9 @@ const { authenticateJwt } = require("../middlewares/auth.middleware");
 
 const router = Router();
 
-router.post("/:userId", authenticateJwt, createTweet);
-router.get("/:userId", getAllTweets);
-router.post("/:userId/:tweetId", authenticateJwt, updateTweet);
-router.post("/:userId/:tweetId", authenticateJwt, deleteTweet);
+router.post("/create/:channelId", authenticateJwt, createTweet);
+router.get("/get/:channelId", getAllTweets);
+router.patch("/update/:channelId/:tweetId", authenticateJwt, updateTweet);
+router.delete("/delete/:channelId/:tweetId", authenticateJwt, deleteTweet);
 
 module.exports = router;
