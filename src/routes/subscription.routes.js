@@ -11,7 +11,7 @@ const router = Router();
 router.use(authenticateJwt);
 
 router.post("/:channelId", toggleSubscription);
-router.get("/:subscribedId", getAllSubscribedToChannels);
-router.get("/:channelId", getUserSubscribedChannels);
+router.get("/subscribedTo/:subscriberId", getAllSubscribedToChannels);
+router.get("/subscribers/:channelId", getUserSubscribedChannels);
 
 module.exports = router;
