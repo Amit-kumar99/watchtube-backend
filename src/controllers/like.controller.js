@@ -2,7 +2,7 @@ const { asyncHandler } = require("../utils/asyncHandler");
 const { Like } = require("../models/like.model");
 const { ApiResponse } = require("../utils/ApiResponse");
 const { ApiError } = require("../utils/ApiError");
-
+//TODO: postman
 const toggleVideoLike = asyncHandler(async () => {
   const { videoId } = req.params;
   if (!videoId) {

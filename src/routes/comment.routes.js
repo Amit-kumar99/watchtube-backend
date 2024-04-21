@@ -4,14 +4,18 @@ const {
   getAllComments,
   getVideoComments,
   addVideoComment,
-  deleteComment,
+  deleteVideoComment,
 } = require("../controllers/comment.controller");
 
 const router = Router();
 
 router.get("/commentsHistory", authenticateJwt, getAllComments);
-router.get("/videoComments", getVideoComments);
-router.post("/add", authenticateJwt, addVideoComment);
-router.post("/delete", authenticateJwt, deleteComment);
+router.get("/videoComments/:videoId", getVideoComments);
+router.post("/addVideoComment/:videoId", authenticateJwt, addVideoComment);
+router.delete(
+  "/deleteVideoComment/:videoId/:commentId",
+  authenticateJwt,
+  deleteVideoComment
+);
 
 module.exports = router;

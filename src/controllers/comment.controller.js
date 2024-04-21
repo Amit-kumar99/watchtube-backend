@@ -2,13 +2,10 @@ const { asyncHandler } = require("../utils/asyncHandler");
 const { Comment } = require("../models/comment.model");
 const { ApiResponse } = require("../utils/ApiResponse");
 const { ApiError } = require("../utils/ApiError");
+const { mongoose } = require("mongoose");
+const { Video } = require("../models/video.model");
 
-//TODO: postman
 const getAllComments = asyncHandler(async (req, res) => {
-  const { userId } = req.user._id;
-  if (!userId?.trim()) {
-    throw new ApiError(401, "userId is required");
-  }
   try {
     const comments = await Comment.find({ owner: req.user?._id }).populate({
       path: "video",
@@ -32,10 +29,10 @@ const getVideoComments = asyncHandler(async (req, res) => {
     limit,
   };
   try {
-    const aggregateComments = await Comment.aggregate([
+    const aggregateComments = Comment.aggregate([
       {
         $match: {
-          video: videoId,
+          video: new mongoose.Types.ObjectId(videoId),
         },
       },
       {
@@ -73,7 +70,7 @@ const getVideoComments = asyncHandler(async (req, res) => {
         {
           currentPage: paginatedComments.page,
           totalPages: paginatedComments.totalPages,
-          videos: paginatedComments.docs,
+          comments: paginatedComments.docs,
           hasNextPage: paginatedComments.hasNextPage,
           hasPrevPage: paginatedComments.hasPrevPage,
         },
@@ -106,14 +103,23 @@ const addVideoComment = asyncHandler(async (req, res) => {
   }
 });
 
-const deleteComment = asyncHandler(async (req, res) => {
-  const { commentId } = req.params;
-  if (!commentId) {
+const deleteVideoComment = asyncHandler(async (req, res) => {
+  const { videoId, commentId } = req.params;
+  if (!videoId?.trim()) {
+    throw new ApiError(401, "videoId is required");
+  }
+  if (!commentId?.trim()) {
     throw new ApiError(401, "commentId is required");
   }
   try {
     const comment = await Comment.findById(commentId);
-    if (comment.owner !== req.user._id) {
+    const video = await Video.findById(videoId);
+    if (
+      !(
+        comment.owner.toString() === req.user._id.toString() ||
+        video.owner.toString() === req.user._id.toString()
+      )
+    ) {
       throw new ApiError(401, "you are not authorized to deleted this comment");
     }
     await Comment.deleteOne({ _id: commentId });
@@ -127,5 +133,5 @@ module.exports = {
   getAllComments,
   getVideoComments,
   addVideoComment,
-  deleteComment,
+  deleteVideoComment,
 };
