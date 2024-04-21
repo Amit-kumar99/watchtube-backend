@@ -2,44 +2,26 @@ const { asyncHandler } = require("../utils/asyncHandler");
 const { Like } = require("../models/like.model");
 const { ApiResponse } = require("../utils/ApiResponse");
 const { ApiError } = require("../utils/ApiError");
-//TODO: postman
-const toggleVideoLike = asyncHandler(async () => {
+
+const toggleVideoLike = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   if (!videoId) {
     throw new ApiError(401, "videoId is required");
   }
   try {
-    const existingLike = await Like.find({ video: videoId });
+    const existingLike = await Like.findOne({
+      video: videoId,
+      likedBy: req.user._id,
+    });
     if (!existingLike) {
       await Like.create({
         video: videoId,
         likedBy: req.user?._id,
       });
-      res.json(new ApiResponse(200, {}, "video liked"));
+      return res.json(new ApiResponse(200, {}, "video liked"));
     }
-    await Like.deleteById(existingLike._id);
+    await Like.findByIdAndDelete(existingLike._id);
     res.json(new ApiResponse(200, {}, "video unliked"));
-  } catch (error) {
-    throw new ApiError(401, error.message);
-  }
-});
-
-const toggleCommentLike = asyncHandler(async (req, res) => {
-  const { commentId } = req.params;
-  if (!commentId) {
-    throw new ApiError(401, "commentId is required");
-  }
-  try {
-    const existingLike = await Like.find({ comment: commentId });
-    if (!existingLike) {
-      await Like.create({
-        comment: commentId,
-        likedBy: req.user._id,
-      });
-      res.json(200, {}, "comment liked");
-    }
-    await Like.deleteById(existingLike._id);
-    res.json(new ApiResponse(200, {}, "comment unliked"));
   } catch (error) {
     throw new ApiError(401, error.message);
   }
@@ -51,16 +33,43 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
     throw new ApiError(401, "tweetId is required");
   }
   try {
-    const existingLike = await Like.find({ tweet: tweetId });
+    const existingLike = await Like.findOne({
+      tweet: tweetId,
+      likedBy: req.user?._id,
+    });
     if (!existingLike) {
       await Like.create({
         tweet: tweetId,
+        likedBy: req.user?._id,
+      });
+      return res.json(new ApiResponse(200, {}, "tweet liked"));
+    }
+    await Like.findByIdAndDelete(existingLike._id);
+    res.json(new ApiResponse(200, {}, "tweet unliked"));
+  } catch (error) {
+    throw new ApiError(401, error.message);
+  }
+});
+
+const toggleCommentLike = asyncHandler(async (req, res) => {
+  const { commentId } = req.params;
+  if (!commentId) {
+    throw new ApiError(401, "commentId is required");
+  }
+  try {
+    const existingLike = await Like.findOne({
+      comment: commentId,
+      likedBy: req.user._id,
+    });
+    if (!existingLike) {
+      await Like.create({
+        comment: commentId,
         likedBy: req.user._id,
       });
-      res.json(200, {}, "tweet liked");
+      return res.json(new ApiResponse(200, {}, "comment liked"));
     }
-    await Like.deleteById(existingLike._id);
-    res.json(new ApiResponse(200, {}, "tweet unliked"));
+    await Like.findByIdAndDelete(existingLike._id);
+    res.json(new ApiResponse(200, {}, "comment unliked"));
   } catch (error) {
     throw new ApiError(401, error.message);
   }
@@ -77,7 +86,7 @@ const getAllLikedVideos = asyncHandler(async (req, res) => {
       },
       {
         $lookup: {
-          from: "video",
+          from: "videos",
           localField: "video",
           foreignField: "_id",
           as: "likedVideos",
@@ -87,13 +96,11 @@ const getAllLikedVideos = asyncHandler(async (req, res) => {
                 from: "users",
                 localField: "owner",
                 foreignField: "_id",
-                as: "videoOwners",
+                as: "videoOwner",
                 pipeline: [
                   {
                     $project: {
-                      fullName: 1,
                       username: 1,
-                      avatar: 1,
                     },
                   },
                 ],
@@ -102,6 +109,11 @@ const getAllLikedVideos = asyncHandler(async (req, res) => {
           ],
         },
       },
+      {
+        $project: {
+          likedVideos: 1,
+        }
+      }
     ]);
     res.json(new ApiResponse(200, likedVideos, "liked videos fetched"));
   } catch (error) {
@@ -111,7 +123,7 @@ const getAllLikedVideos = asyncHandler(async (req, res) => {
 
 module.exports = {
   toggleVideoLike,
-  toggleCommentLike,
   toggleTweetLike,
+  toggleCommentLike,
   getAllLikedVideos,
 };

@@ -2,7 +2,7 @@ const { Playlist } = require("../models/playlist.model");
 const { asyncHandler } = require("../utils/asyncHandler");
 const { ApiError } = require("../utils/ApiError");
 const { ApiResponse } = require("../utils/ApiResponse");
-
+//TODO: postman
 const createPlaylist = asyncHandler(async (req, res) => {
   const { name } = req.body;
   const { videoId } = req.params;
