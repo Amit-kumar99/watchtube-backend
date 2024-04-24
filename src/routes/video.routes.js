@@ -12,7 +12,8 @@ const { upload } = require("../middlewares/multer.middleware");
 
 const router = Router();
 
-router.get("/profile/:userId", authenticateJwt, getAllVideos);
+router.get("/getAll", getAllVideos);
+router.get("/profile/:userId", authenticateJwt, getAllVideosByUserId);
 router.post(
   "/upload",
   authenticateJwt,

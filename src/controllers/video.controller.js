@@ -5,10 +5,38 @@ const { asyncHandler } = require("../utils/asyncHandler");
 const { Video } = require("../models/video.model");
 const { mongoose } = require("mongoose");
 
-const getAllVideos = asyncHandler(async (req, res) => {
+const getAllVideos = asyncHandler(async (_, res) => {
+  const page = req.query?.page || 1;
+  const limit = req.query?.limit || 10;
+
+  try {
+    const paginatedVideos = await Video.paginate(
+      {},
+      { page, limit, populate: "owner", select: "avatar username" }
+    );
+    res.json(
+      new ApiResponse(
+        200,
+        {
+          currentPage: paginatedVideos.page,
+          totalPages: paginatedVideos.totalPages,
+          videos: paginatedVideos.docs,
+          hasNextPage: paginatedVideos.hasNextPage,
+          hasPrevPage: paginatedVideos.hasPrevPage,
+        },
+        "all videos fetched"
+      )
+    );
+  } catch (error) {
+    throw new ApiError(501, error.message);
+  }
+});
+
+const getAllVideosByUserId = asyncHandler(async (req, res) => {
   const page = req.query?.page || 1;
   const limit = req.query?.limit || 10;
   const { userId } = req.params;
+
   const options = {
     page,
     limit,
@@ -22,29 +50,13 @@ const getAllVideos = asyncHandler(async (req, res) => {
         },
       },
       {
-        $lookup: {
-          from: "likes",
-          localField: "_id",
-          foreignField: "video",
-          as: "videoLikes",
-        },
-      },
-      {
-        $addFields: {
-          likesCount: {
-            $size: "$videoLikes",
-          },
-        },
-      },
-      {
         $project: {
           _id: 1,
           thumbnail: 1,
+          duration: 1,
           title: 1,
           views: 1,
-          duration: 1,
           createdAt: 1,
-          likesCount: 1,
         },
       },
     ]);
@@ -198,6 +210,7 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
 
 module.exports = {
   getAllVideos,
+  getAllVideosByUserId,
   uploadVideo,
   getVideoById,
   updateVideo,
