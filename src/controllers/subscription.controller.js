@@ -34,23 +34,17 @@ const toggleSubscription = asyncHandler(async (req, res) => {
     await Subscription.findByIdAndDelete(existingSubscription[0]._id);
     res.json(new ApiResponse(200, {}, "Unsubscribed successfully"));
   } catch (error) {
-    throw new ApiError(
-      401,
-      error.message || "Error while subscribing or unsubscribing"
-    );
+    throw new ApiError(401, error.message);
   }
 });
 
 const getAllSubscribedToChannels = asyncHandler(async (req, res) => {
+  const subscriberId = req.user?._id;
   try {
-    const { subscriberId } = req.params;
-    if (!subscriberId?.trim()) {
-      throw new ApiError(401, "subscriberId is required");
-    }
     const subscribedToChannels = await Subscription.aggregate([
       {
         $match: {
-          subscriber: new mongoose.Types.ObjectId(subscriberId),
+          subscriber: subscriberId,
         },
       },
       {
@@ -79,7 +73,7 @@ const getAllSubscribedToChannels = asyncHandler(async (req, res) => {
     res.json(
       new ApiResponse(
         200,
-        subscribedToChannels[0],
+        subscribedToChannels,
         "All subscribed channels fetched"
       )
     );
@@ -89,12 +83,12 @@ const getAllSubscribedToChannels = asyncHandler(async (req, res) => {
 });
 
 const getUserSubscribedChannels = asyncHandler(async (req, res) => {
-  const { channelId } = req.params;
+  const channelId = req.user._id;
   try {
     const subscribers = await Subscription.aggregate([
       {
         $match: {
-          channel: new mongoose.Types.ObjectId(channelId),
+          channel: channelId,
         },
       },
       {
@@ -120,7 +114,7 @@ const getUserSubscribedChannels = asyncHandler(async (req, res) => {
         },
       },
     ]);
-    res.json(new ApiResponse(200, subscribers[0], "subscribers fetched"));
+    res.json(new ApiResponse(200, subscribers, "subscribers fetched"));
   } catch (error) {
     throw new ApiError(401, error.message);
   }
