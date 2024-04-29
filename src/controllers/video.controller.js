@@ -5,15 +5,36 @@ const { asyncHandler } = require("../utils/asyncHandler");
 const { Video } = require("../models/video.model");
 const { mongoose } = require("mongoose");
 
-const getAllVideos = asyncHandler(async (_, res) => {
+const getAllVideos = asyncHandler(async (req, res) => {
   const page = req.query?.page || 1;
   const limit = req.query?.limit || 10;
 
+  const options = {
+    page,
+    limit,
+  };
+
   try {
-    const paginatedVideos = await Video.paginate(
-      {},
-      { page, limit, populate: "owner", select: "avatar username" }
-    );
+    const videos = Video.aggregate([
+      {
+        $lookup: {
+          from: "users",
+          localField: "owner",
+          foreignField: "_id",
+          as: "owner",
+          pipeline: [
+            {
+              $project: {
+                avatar: 1,
+                username: 1,
+              },
+            },
+          ],
+        },
+      },
+    ]);
+    const paginatedVideos = await Video.aggregatePaginate(videos, options);
+
     res.json(
       new ApiResponse(
         200,
@@ -121,10 +142,98 @@ const getVideoById = asyncHandler(async (req, res) => {
     throw new ApiError(401, "videoId is required");
   }
   try {
-    const video = await Video.findById(videoId);
-    video.views = video.views + 1;
-    await video.save();
-    res.json(new ApiResponse(200, video, "Video fetched"));
+    const video = await Video.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(videoId),
+        },
+      },
+      {
+        $lookup: {
+          from: "subscriptions",
+          localField: "owner",
+          foreignField: "channel",
+          as: "subscribers",
+        },
+      },
+      {
+        $lookup: {
+          from: "likes",
+          localField: "_id",
+          foreignField: "video",
+          as: "likes",
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "owner",
+          foreignField: "_id",
+          as: "owner",
+          pipeline: [
+            {
+              $project: {
+                avatar: 1,
+                username: 1,
+              },
+            },
+          ],
+        },
+      },
+      {
+        $addFields: {
+          subscribersCount: {
+            $size: "$subscribers",
+          },
+          likesCount: {
+            $size: "$likes",
+          },
+          // gives false always, not working
+          isSubscribed: {
+            $cond: {
+              if: { $in: [req.user?._id, "$subscribers.subscriber"] },
+              then: true,
+              else: false,
+            },
+          },
+           // gives false always, not working
+          isLiked: {
+            $cond: {
+              if: { $in: [req.user?._id, "$likes.likedBy"] },
+              then: true,
+              else: false,
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          videoFile: 1,
+          title: 1,
+          description: 1,
+          duration: 1,
+          views: 1,
+          createdAt: 1,
+          owner: 1,
+          subscribersCount: 1,
+          likesCount: 1,
+          isSubscribed: 1,
+          subscribers: 1,
+          isLiked: 1,
+        },
+      },
+    ]);
+    //can be put in messaging queue, not so critical task
+    await Video.findByIdAndUpdate(
+      videoId,
+      {
+        $inc: {
+          views: 1,
+        },
+      },
+      { new: true }
+    );
+    res.json(new ApiResponse(200, video[0], "Video fetched"));
   } catch (error) {
     throw new ApiError(401, error.message);
   }

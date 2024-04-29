@@ -58,7 +58,7 @@ router.patch(
   updateUserCoverImage
 );
 
-router.get("/channel/:username", authenticateJwt, getUserChannelProfile);
+router.get("/channel/:userId", authenticateJwt, getUserChannelProfile);
 
 router.get("/watchHistory", authenticateJwt, getWatchHistory);
 

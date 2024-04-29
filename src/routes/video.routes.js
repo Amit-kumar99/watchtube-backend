@@ -2,6 +2,7 @@ const { Router } = require("express");
 const {
   uploadVideo,
   getAllVideos,
+  getAllVideosByUserId,
   getVideoById,
   updateVideo,
   deleteVideo,
