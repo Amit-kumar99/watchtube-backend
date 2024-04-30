@@ -96,7 +96,7 @@ const getAllLikedVideos = asyncHandler(async (req, res) => {
                 from: "users",
                 localField: "owner",
                 foreignField: "_id",
-                as: "videoOwner",
+                as: "owner",
                 pipeline: [
                   {
                     $project: {
@@ -115,7 +115,8 @@ const getAllLikedVideos = asyncHandler(async (req, res) => {
         }
       }
     ]);
-    res.json(new ApiResponse(200, likedVideos, "liked videos fetched"));
+    const likedVideosCount = likedVideos.length;
+    res.json(new ApiResponse(200, {likedVideos, likedVideosCount}, "liked videos fetched"));
   } catch (error) {
     throw new ApiError(401, error.message);
   }
