@@ -47,7 +47,7 @@ const getAllTweets = asyncHandler(async (req, res) => {
           from: "users",
           localField: "tweetedBy",
           foreignField: "_id",
-          as: "owners",
+          as: "owner",
           pipeline: [
             {
               $project: {
@@ -71,14 +71,23 @@ const getAllTweets = asyncHandler(async (req, res) => {
           likesCount: {
             $size: "$likes",
           },
+          isLiked: {
+            $cond: {
+              if: { $in: [req.user?._id, "$likes.likedBy"] },
+              then: true,
+              else: false,
+            },
+          },
         },
       },
       {
         $project: {
           _id: 1,
-          tweetCreatedAt: "$createdAt",
+          content: 1,
+          createdAt: 1,
           likesCount: 1,
-          owners: 1,
+          isLiked: 1,
+          owner: 1,
         },
       },
     ]);
