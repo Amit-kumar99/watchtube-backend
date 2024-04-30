@@ -60,10 +60,21 @@ const getPlaylistById = asyncHandler(async (req, res) => {
     const playlist = await Playlist.findById(playlistId)
       .populate({
         path: "videos",
-        select: "thumbnail duration title views createdAt",
+        select: "thumbnail owner duration title views createdAt",
+        populate: {
+          path: "owner",
+          select: "username",
+        },
       })
       .populate({ path: "owner", select: "username" });
-    res.json(new ApiResponse(200, playlist, "playlist fetched successfully"));
+    const videosCount = playlist.videos.length;
+    res.json(
+      new ApiResponse(
+        200,
+        { playlist, videosCount },
+        "playlist fetched successfully"
+      )
+    );
   } catch (error) {
     throw new ApiError(401, error.message);
   }
