@@ -3,6 +3,7 @@ const { ApiResponse } = require("../utils/ApiResponse");
 const { uploadOnCloudinary } = require("../utils/cloudinary");
 const { asyncHandler } = require("../utils/asyncHandler");
 const { Video } = require("../models/video.model");
+const { User } = require("../models/user.model");
 const { mongoose } = require("mongoose");
 
 const getAllVideos = asyncHandler(async (req, res) => {
@@ -188,7 +189,6 @@ const getVideoById = asyncHandler(async (req, res) => {
           likesCount: {
             $size: "$likes",
           },
-          // gives false always, not working
           isSubscribed: {
             $cond: {
               if: { $in: [req.user?._id, "$subscribers.subscriber"] },
@@ -196,7 +196,6 @@ const getVideoById = asyncHandler(async (req, res) => {
               else: false,
             },
           },
-           // gives false always, not working
           isLiked: {
             $cond: {
               if: { $in: [req.user?._id, "$likes.likedBy"] },
@@ -233,6 +232,11 @@ const getVideoById = asyncHandler(async (req, res) => {
       },
       { new: true }
     );
+    await User.findByIdAndUpdate(req.user._id, {
+      $push: {
+        watchHistory: videoId,
+      },
+    });
     res.json(new ApiResponse(200, video[0], "Video fetched"));
   } catch (error) {
     throw new ApiError(401, error.message);
