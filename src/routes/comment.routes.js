@@ -10,7 +10,7 @@ const {
 const router = Router();
 
 router.get("/commentsHistory", authenticateJwt, getAllComments);
-router.get("/videoComments/:videoId", getVideoComments);
+router.get("/videoComments/:videoId", authenticateJwt, getVideoComments);
 router.post("/addVideoComment/:videoId", authenticateJwt, addVideoComment);
 router.delete(
   "/deleteVideoComment/:videoId/:commentId",

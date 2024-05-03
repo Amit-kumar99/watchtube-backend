@@ -26,13 +26,14 @@ const videoSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    isPublished: {
-      type: Boolean,
-      default: true,
-    },
+    // isPrivate: {
+    //   type: Boolean,
+    //   default: false,
+    // },
     owner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      required: true,
     },
   },
   {

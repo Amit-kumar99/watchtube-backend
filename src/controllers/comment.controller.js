@@ -37,16 +37,39 @@ const getVideoComments = asyncHandler(async (req, res) => {
       },
       {
         $lookup: {
+          from: "users",
+          localField: "owner",
+          foreignField: "_id",
+          as: "owner",
+          pipeline: [
+            {
+              $project: {
+                username: 1,
+                avatar: 1,
+              },
+            },
+          ],
+        },
+      },
+      {
+        $lookup: {
           from: "likes",
           localField: "_id",
           foreignField: "comment",
-          as: "commentLikes",
+          as: "likes",
         },
       },
       {
         $addFields: {
           likesCount: {
-            $size: "$commentLikes",
+            $size: "$likes",
+          },
+          isLiked: {
+            $cond: {
+              if: { $in: [req.user?._id, "$likes.likedBy"] },
+              then: true,
+              else: false,
+            },
           },
         },
       },
@@ -54,7 +77,9 @@ const getVideoComments = asyncHandler(async (req, res) => {
         $project: {
           _id: 1,
           content: 1,
+          owner: 1,
           likesCount: 1,
+          isLiked: 1,
         },
       },
     ]);
@@ -71,6 +96,7 @@ const getVideoComments = asyncHandler(async (req, res) => {
           currentPage: paginatedComments.page,
           totalPages: paginatedComments.totalPages,
           comments: paginatedComments.docs,
+          commentsCount: paginatedComments.docs.length,
           hasNextPage: paginatedComments.hasNextPage,
           hasPrevPage: paginatedComments.hasPrevPage,
         },

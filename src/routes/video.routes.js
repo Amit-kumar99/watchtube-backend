@@ -38,6 +38,6 @@ router.patch(
   updateVideo
 );
 router.delete("/delete/:videoId", authenticateJwt, deleteVideo);
-router.post("/togglePublishStatus/:videoId", authenticateJwt, togglePublishStatus);
+// router.post("/toggleVisibilty/:videoId", authenticateJwt, toggleVisibilty);
 
 module.exports = router;

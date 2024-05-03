@@ -77,6 +77,7 @@ const getAllVideosByUserId = asyncHandler(async (req, res) => {
           thumbnail: 1,
           duration: 1,
           title: 1,
+          description: 1,
           views: 1,
           createdAt: 1,
         },
@@ -246,8 +247,15 @@ const getVideoById = asyncHandler(async (req, res) => {
 const updateVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   const { title, description } = req.body;
-  if (!videoId) {
+  if (!videoId?.trim()) {
     throw new ApiError(401, "videoId is required");
+  }
+  const video = await Video.findById(videoId);
+  if (!video) {
+    throw new ApiError(401, "Invalid videoId");
+  }
+  if (video.owner.toString() !== req.user?._id.toString()) {
+    throw new ApiError(401, "You are unauthorized to edit this video");
   }
   if (!title?.trim()) {
     throw new ApiError(401, "title is required");
@@ -277,12 +285,15 @@ const updateVideo = asyncHandler(async (req, res) => {
 
 const deleteVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
-  if (!videoId) {
+  if (!videoId?.trim()) {
     throw new ApiError(401, "videoId is required");
   }
   const video = await Video.findById(videoId);
   if (!video) {
     throw new ApiError(401, "Invalid videoId");
+  }
+  if (video.owner.toString() !== req.user?._id.toString()) {
+    throw new ApiError(401, "You are unauthorized to delete this video");
   }
   try {
     await Video.deleteOne({
@@ -294,32 +305,32 @@ const deleteVideo = asyncHandler(async (req, res) => {
   }
 });
 
-const togglePublishStatus = asyncHandler(async (req, res) => {
-  const { videoId } = req.params;
-  if (!videoId) {
-    throw new ApiError(401, "videoId is required");
-  }
-  const video = await Video.findById(videoId);
-  if (!video) {
-    throw new ApiError(401, "invalid videoId");
-  }
-  const isPublished = !video.isPublished;
-  console.log(isPublished);
-  try {
-    const video = await Video.findByIdAndUpdate(
-      videoId,
-      {
-        $set: {
-          isPublished,
-        },
-      },
-      { new: true }
-    );
-    res.json(new ApiResponse(200, video, "Video publish status updated"));
-  } catch (error) {
-    throw new ApiError(401, error.message || "Invalid videoId");
-  }
-});
+// const toggleVisibility = asyncHandler(async (req, res) => {
+//   const { videoId } = req.params;
+//   if (!videoId) {
+//     throw new ApiError(401, "videoId is required");
+//   }
+//   const video = await Video.findById(videoId);
+//   if (!video) {
+//     throw new ApiError(401, "invalid videoId");
+//   }
+//   const isPrivate = !video.isPrivate;
+//   console.log(isPrivate);
+//   try {
+//     const video = await Video.findByIdAndUpdate(
+//       videoId,
+//       {
+//         $set: {
+//           isPrivate,
+//         },
+//       },
+//       { new: true }
+//     );
+//     res.json(new ApiResponse(200, video, "Video visibility updated"));
+//   } catch (error) {
+//     throw new ApiError(401, error.message);
+//   }
+// });
 
 module.exports = {
   getAllVideos,
@@ -328,5 +339,5 @@ module.exports = {
   getVideoById,
   updateVideo,
   deleteVideo,
-  togglePublishStatus,
+  // togglePublishStatus,
 };
