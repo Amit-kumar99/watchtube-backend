@@ -105,6 +105,7 @@ const getAllTweets = asyncHandler(async (req, res) => {
 
 const updateTweet = asyncHandler(async (req, res) => {
   const { channelId, tweetId } = req.params;
+  const { content } = req.body;
   if (!channelId?.trim()) {
     throw new ApiError("channelId is required");
   }
@@ -114,7 +115,6 @@ const updateTweet = asyncHandler(async (req, res) => {
   if (!tweetId?.trim()) {
     throw new ApiError(401, "tweetId is required");
   }
-  const { content } = req.body;
   if (!content?.trim()) {
     throw new ApiError(401, "content is required");
   }
