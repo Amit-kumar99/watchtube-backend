@@ -106,17 +106,18 @@ const getAllVideosByUserId = asyncHandler(async (req, res) => {
 });
 
 const uploadVideo = asyncHandler(async (req, res) => {
-  const { title } = req.body;
-  if (!title) {
+  const { title, description } = req.body;
+  if (!title?.trim()) {
     throw new ApiError(401, "title is required");
   }
+  console.log(req.files);
   const videoLocalPath = req.files?.video[0].path;
   const thumbnailLocalPath = req.files?.thumbnail[0].path;
   if (!videoLocalPath) {
-    throw new ApiError(400, "video file not found");
+    throw new ApiError(401, "video file not found");
   }
   if (!thumbnailLocalPath) {
-    throw new ApiError(400, "thumbnail file not found");
+    throw new ApiError(401, "thumbnail file not found");
   }
   try {
     const video = await uploadOnCloudinary(videoLocalPath);
@@ -127,6 +128,7 @@ const uploadVideo = asyncHandler(async (req, res) => {
       videoFile: video?.url,
       duration: video?.duration,
       owner: req.user._id,
+      description,
     });
     res.json(new ApiResponse(200, newVideo, "Video uploaded successfully"));
   } catch (error) {
