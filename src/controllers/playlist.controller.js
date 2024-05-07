@@ -51,6 +51,41 @@ const getAllPlaylists = asyncHandler(async (req, res) => {
   }
 });
 
+const getAllUserPlaylistsWithIsCheckedForAVideo = asyncHandler(
+  async (req, res) => {
+    const { videoId } = req.params;
+    try {
+      const playlists = await Playlist.aggregate([
+        {
+          $match: {
+            owner: req.user?._id,
+          },
+        },
+        {
+          $addFields: {
+            isChecked: {
+              $cond: {
+                if: { $in: [new mongoose.Types.ObjectId(videoId), "$videos"] },
+                then: true,
+                else: false,
+              },
+            },
+          },
+        },
+      ]);
+      res.json(
+        new ApiResponse(
+          200,
+          playlists,
+          "playlists with isChecked for a video fetched"
+        )
+      );
+    } catch (error) {
+      throw new ApiError(401, error.message);
+    }
+  }
+);
+
 const getPlaylistById = asyncHandler(async (req, res) => {
   const { playlistId } = req.params;
   if (!playlistId?.trim()) {
@@ -80,8 +115,7 @@ const getPlaylistById = asyncHandler(async (req, res) => {
   }
 });
 
-const addVideoToPlaylist = asyncHandler(async (req, res) => {
-  // how to get playlist id, since i'm planning to use checkbox to check the playlist name, but name can be redundant
+const toggleAddVideoToPlaylist = asyncHandler(async (req, res) => {
   const { playlistId, videoId } = req.params;
   if (!playlistId?.trim()) {
     throw new ApiError(401, "playlistId is required");
@@ -93,52 +127,29 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
   if (playlist?.owner.toString() !== req?.user?._id?.toString()) {
     throw new ApiError(401, "You are not authorized to modify this playlist");
   }
-  if (
-    playlist.videos.some((video) => video.toString() === videoId.toString())
-  ) {
-    throw new ApiError(401, "This video already exists in this playlist");
-  }
-  try {
-    const playlist = await Playlist.findByIdAndUpdate(
-      playlistId,
-      {
-        $push: { videos: videoId },
-      },
-      { new: true }
-    );
-    res.json(new ApiResponse(200, playlist, "video added to playlist"));
-  } catch (error) {
-    throw new ApiError(401, error.message);
-  }
-});
-
-const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
-  const { playlistId, videoId } = req.params;
-  if (!playlistId?.trim()) {
-    throw new ApiError(401, "playlistId is required");
-  }
-  if (!videoId?.trim()) {
-    throw new ApiError(401, "videoId is required");
-  }
-  const playlist = await Playlist.findById(playlistId);
-  if (playlist?.owner.toString() !== req?.user?._id.toString()) {
-    throw new ApiError(401, "You are not authorized to modify this playlist");
-  }
   try {
     if (
       playlist.videos.some((video) => video.toString() === videoId.toString())
     ) {
-      const playlist = await Playlist.findByIdAndUpdate(
+      const existingPlaylist = await Playlist.findByIdAndUpdate(
         playlistId,
         {
           $pull: { videos: videoId },
         },
         { new: true }
       );
-      res.json(new ApiResponse(200, playlist, "video removed from playlist"));
-    } else {
-      throw new ApiError(401, "This video does not exist in this playlist");
+      return res.json(
+        new ApiResponse(200, existingPlaylist, "video removed from playlist")
+      );
     }
+    const newPlaylist = await Playlist.findByIdAndUpdate(
+      playlistId,
+      {
+        $push: { videos: videoId },
+      },
+      { new: true }
+    );
+    res.json(new ApiResponse(200, newPlaylist, "video added to playlist"));
   } catch (error) {
     throw new ApiError(401, error.message);
   }
@@ -193,9 +204,9 @@ const updatePlaylistDetails = asyncHandler(async (req, res) => {
 module.exports = {
   createPlaylist,
   getAllPlaylists,
+  getAllUserPlaylistsWithIsCheckedForAVideo,
   getPlaylistById,
-  addVideoToPlaylist,
-  removeVideoFromPlaylist,
+  toggleAddVideoToPlaylist,
   deletePlaylist,
   updatePlaylistDetails,
 };
