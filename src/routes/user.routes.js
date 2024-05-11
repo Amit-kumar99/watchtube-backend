@@ -38,7 +38,7 @@ router.post("/logout", authenticateJwt, logoutUser);
 
 router.post("/refresh-token", refreshAccessToken);
 
-router.post("/change-password", authenticateJwt, changeCurrentPassword);
+router.patch("/change-password", authenticateJwt, changeCurrentPassword);
 
 router.get("/current-user", authenticateJwt, getCurrentUser);
 
