@@ -1,12 +1,19 @@
 const { asyncHandler } = require("../utils/asyncHandler");
 const { User } = require("../models/user.model");
 const { hashPassword, verifyPassword } = require("../helpers/bcryptHelper");
-const { uploadOnCloudinary } = require("../utils/cloudinary");
+const {
+  uploadOnCloudinary,
+  deleteOnCloudinary,
+} = require("../utils/cloudinary");
 const { ApiResponse } = require("../utils/ApiResponse");
 const { ApiError } = require("../utils/ApiError");
 const generateAccessAndRefreshTokens = require("../helpers/jwtHelper");
 const jwt = require("jsonwebtoken");
 const { mongoose } = require("mongoose");
+const {
+  extractPublicIdFromUrl,
+  extractResourceType,
+} = require("../helpers/cloudinaryHelper");
 
 const registerUser = asyncHandler(async (req, res) => {
   const { fullName, username, email, password } = req.body;
@@ -54,6 +61,12 @@ const registerUser = asyncHandler(async (req, res) => {
 
     return res.json(new ApiResponse(200, user, "user signed up successfully"));
   } catch (error) {
+    if (avatar) {
+      await deleteOnCloudinary(avatar.public_id, avatar.resource_type);
+    }
+    if (coverImage) {
+      await deleteOnCloudinary(coverImage.public_id, coverImage.resource_type);
+    }
     throw new ApiError(501, error.message);
   }
 });
@@ -90,7 +103,7 @@ const loginUser = asyncHandler(async (req, res) => {
       httpOnly: true,
       sameSite: "None",
       secure: true,
-      path: "/"
+      path: "/",
     };
 
     return res
@@ -246,6 +259,8 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Error while uploading avatar file");
   }
 
+  const oldAvatarUrl = await User.findById(req.user._id).avatar;
+
   try {
     const user = await User.findByIdAndUpdate(
       req.user._id,
@@ -256,6 +271,11 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
       },
       { new: true }
     ).select("-password -refreshToken");
+
+    //delete previous avatar file on cloudinary after successful upload of new avatar
+    const publicId = extractPublicIdFromUrl(oldAvatarUrl);
+    const resourceType = extractResourceType(oldAvatarUrl);
+    await deleteOnCloudinary(publicId, resourceType);
 
     res.json(new ApiResponse(200, user, "Avatar updated successfully"));
   } catch (error) {
@@ -274,6 +294,8 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Error while uploading cover image file");
   }
 
+  const oldCoverImageUrl = await User.findById(req.user._id).coverImage;
+
   try {
     const user = await User.findByIdAndUpdate(
       req.user._id,
@@ -284,6 +306,11 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
       },
       { new: true }
     ).select("-password -refreshToken");
+
+    //delete previous coverImage file on cloudinary after successful upload of new coverImage
+    const publicId = extractPublicIdFromUrl(oldCoverImageUrl);
+    const resourceType = extractResourceType(oldCoverImageUrl);
+    await deleteOnCloudinary(publicId, resourceType);
 
     res.json(new ApiResponse(200, user, "Avatar updated successfully"));
   } catch (error) {

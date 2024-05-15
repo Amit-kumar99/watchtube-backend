@@ -1,6 +1,9 @@
 const { ApiError } = require("../utils/ApiError");
 const { ApiResponse } = require("../utils/ApiResponse");
-const { uploadOnCloudinary } = require("../utils/cloudinary");
+const {
+  uploadOnCloudinary,
+  deleteOnCloudinary,
+} = require("../utils/cloudinary");
 const { asyncHandler } = require("../utils/asyncHandler");
 const { Video } = require("../models/video.model");
 const { User } = require("../models/user.model");
@@ -110,7 +113,6 @@ const uploadVideo = asyncHandler(async (req, res) => {
   if (!title?.trim()) {
     throw new ApiError(401, "title is required");
   }
-  console.log(req.files);
   const videoLocalPath = req.files?.video[0].path;
   const thumbnailLocalPath = req.files?.thumbnail[0].path;
   if (!videoLocalPath) {
@@ -119,9 +121,9 @@ const uploadVideo = asyncHandler(async (req, res) => {
   if (!thumbnailLocalPath) {
     throw new ApiError(401, "thumbnail file not found");
   }
+  const video = await uploadOnCloudinary(videoLocalPath);
+  const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
   try {
-    const video = await uploadOnCloudinary(videoLocalPath);
-    const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
     const newVideo = await Video.create({
       ...req.body,
       thumbnail: thumbnail?.url,
@@ -132,6 +134,12 @@ const uploadVideo = asyncHandler(async (req, res) => {
     });
     res.json(new ApiResponse(200, newVideo, "Video uploaded successfully"));
   } catch (error) {
+    if (video) {
+      await deleteOnCloudinary(video.public_id, video.resource_type);
+    }
+    if (thumbnail) {
+      await deleteOnCloudinary(thumbnail.public_id, thumbnail.resource_type);
+    }
     throw new ApiError(
       501,
       error.message ||
@@ -266,7 +274,11 @@ const updateVideo = asyncHandler(async (req, res) => {
   if (!thumbnailLocalPath) {
     throw new ApiError(401, "thumbnail local path is required");
   }
+
+  const oldThumbnailUrl = video.thumbnail;
+
   const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
+
   try {
     const updatedVideo = await Video.findByIdAndUpdate(
       videoId,
@@ -279,6 +291,12 @@ const updateVideo = asyncHandler(async (req, res) => {
       },
       { new: true }
     );
+
+    //delete previous thumbnail file on cloudinary after successful upload of new thumbnail
+    const publicId = extractPublicIdFromUrl(oldThumbnailUrl);
+    const resourceType = extractResourceType(oldThumbnailUrl);
+    await deleteOnCloudinary(publicId, resourceType);
+
     res.json(new ApiResponse(200, updatedVideo, "Video updated successfully"));
   } catch (error) {
     throw new ApiError(401, error.message || "Invalid videoId");
@@ -297,10 +315,19 @@ const deleteVideo = asyncHandler(async (req, res) => {
   if (video.owner.toString() !== req.user?._id.toString()) {
     throw new ApiError(401, "You are unauthorized to delete this video");
   }
+
+  const oldVideoUrl = video.video;
+
   try {
     await Video.deleteOne({
       _id: videoId,
     });
+
+    //delete video file on cloudinary after successful delete from database
+    const publicId = extractPublicIdFromUrl(oldVideoUrl);
+    const resourceType = extractResourceType(oldVideoUrl);
+    await deleteOnCloudinary(publicId, resourceType);
+
     res.json(new ApiResponse(200, {}, "Video deleted successfully"));
   } catch (error) {
     throw new ApiError(401, error.message);

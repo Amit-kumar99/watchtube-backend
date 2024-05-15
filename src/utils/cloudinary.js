@@ -20,10 +20,23 @@ const uploadOnCloudinary = async (localFilePath) => {
     return response;
   } catch (error) {
     fs.unlinkSync(localFilePath);
-    throw new ApiError(501, "cloudinary upload error");
+    throw new ApiError(401, "cloudinary upload error");
+  }
+};
+
+const deleteOnCloudinary = async (publicId, resourceType) => {
+  try {
+    if (!publicId) {
+      throw new ApiError(401, "No such publicId exists in cloudinary");
+    }
+    await cloudinary.uploader.destroy(publicId, { resourceType });
+    console.log("cloudinary file deleted successfully");
+  } catch (error) {
+    throw new ApiError(401, "cloudinary delete error");
   }
 };
 
 module.exports = {
   uploadOnCloudinary,
+  deleteOnCloudinary,
 };
