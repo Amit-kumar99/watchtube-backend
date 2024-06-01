@@ -57,9 +57,13 @@ const registerUser = asyncHandler(async (req, res) => {
       avatar: avatar?.url,
       coverImage: coverImage?.url || "",
       password: hashedPassword,
-    }).select("-password -refreshToken");
+    });
 
-    return res.json(new ApiResponse(200, user, "user signed up successfully"));
+    const createdUser = await User.findById(user._id).select(
+      "-password -refreshToken"
+    );
+
+    return res.json(new ApiResponse(200, createdUser, "user signed up successfully"));
   } catch (error) {
     if (avatar) {
       await deleteOnCloudinary(avatar.public_id, avatar.resource_type);

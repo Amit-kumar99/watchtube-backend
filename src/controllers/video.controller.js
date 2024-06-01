@@ -6,8 +6,13 @@ const {
 } = require("../utils/cloudinary");
 const { asyncHandler } = require("../utils/asyncHandler");
 const { Video } = require("../models/video.model");
+const { Playlist } = require("../models/playlist.model");
 const { User } = require("../models/user.model");
 const { mongoose } = require("mongoose");
+const {
+  extractPublicIdFromUrl,
+  extractResourceType,
+} = require("../helpers/cloudinaryHelper");
 
 const getAllVideos = asyncHandler(async (req, res) => {
   const page = req.query?.page || 1;
@@ -316,12 +321,20 @@ const deleteVideo = asyncHandler(async (req, res) => {
     throw new ApiError(401, "You are unauthorized to delete this video");
   }
 
-  const oldVideoUrl = video.video;
+  const oldVideoUrl = video.videoFile;
 
   try {
     await Video.deleteOne({
       _id: videoId,
     });
+
+    //update all playlists having videoId to remove videoId from videos field
+    await Playlist.updateMany(
+      { videos: { $in: [videoId] } },
+      {
+        $pull: { videos: videoId },
+      },
+    );
 
     //delete video file on cloudinary after successful delete from database
     const publicId = extractPublicIdFromUrl(oldVideoUrl);
