@@ -131,11 +131,10 @@ const uploadVideo = asyncHandler(async (req, res) => {
   try {
     const newVideo = await Video.create({
       ...req.body,
-      thumbnail: thumbnail?.url,
-      videoFile: video?.url,
+      thumbnail: thumbnail?.secure_url,
+      videoFile: video?.secure_url,
       duration: video?.duration,
       owner: req.user._id,
-      description,
     });
     res.json(new ApiResponse(200, newVideo, "Video uploaded successfully"));
   } catch (error) {
