@@ -27,6 +27,7 @@ const commentRoutes = require("./routes/comment.routes");
 const likeRoutes = require("./routes/like.routes");
 const playlistRoutes = require("./routes/playlist.routes");
 const paymentRoutes = require("./routes/payment.routes");
+const healthcheckRoutes = require("./routes/healthcheck.routes");
 
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/videos", videoRoutes);
@@ -36,6 +37,7 @@ app.use("/api/v1/comments", commentRoutes);
 app.use("/api/v1/likes", likeRoutes);
 app.use("/api/v1/playlists", playlistRoutes);
 app.use("/api/v1/payments", paymentRoutes);
+app.use("/api/v1/healthcheck", healthcheckRoutes);
 
 module.exports = {
   app,
