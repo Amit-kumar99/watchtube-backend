@@ -58,7 +58,8 @@ const getAllVideos = asyncHandler(async (req, res) => {
       )
     );
   } catch (error) {
-    throw new ApiError(501, error.message);
+      console.error(error);
+      throw new ApiError(501, error.message);
   }
 });
 
